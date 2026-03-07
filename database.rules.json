@@ -1,0 +1,32 @@
+{
+  "rules": {
+    "documents": {
+      ".indexOn": ["ownerId", "members/editor", "members/viewer"],
+      "$docId": {
+        ".read": "auth != null && (data.child('ownerId').val() === auth.uid || data.child('members').child(auth.uid).exists())",
+        ".write": "auth != null && (data.child('ownerId').val() === auth.uid || newData.child('ownerId').val() === auth.uid || (data.exists() && data.child('members').child(auth.uid).val() === 'editor'))"
+      }
+    },
+    "deleted_documents": {
+      ".indexOn": ["ownerId"],
+      "$docId": {
+        ".read": "auth != null && data.child('ownerId').val() === auth.uid",
+        ".write": "auth != null && (data.child('ownerId').val() === auth.uid || newData.child('ownerId').val() === auth.uid)"
+      }
+    },
+    "cells": {
+      "$docId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "presence": {
+      "$docId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid"
+        }
+      }
+    }
+  }
+}
