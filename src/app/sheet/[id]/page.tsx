@@ -16,7 +16,7 @@ import { usePresence } from '@/hooks/usePresence';
 import { useSheetStore } from '@/store/sheetStore';
 import { restoreDocument } from '@/lib/firebase/documents';
 import { exportToCsv } from '@/lib/utils/exportCsv';
-import { ref, onValue, off } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 import { database } from '@/lib/firebase/config';
 import {
   FileSpreadsheet, ArrowLeft, Loader2,
