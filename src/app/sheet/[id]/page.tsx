@@ -90,6 +90,8 @@ export default function SheetPage() {
     return () => {
       setCells({});
       setSelectedCell(null);
+      useSheetStore.getState().resetColWidths();
+      useSheetStore.getState().resetRowHeights();
     };
   }, [setCells, setSelectedCell]);
 

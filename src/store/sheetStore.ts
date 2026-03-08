@@ -26,6 +26,8 @@ interface SheetState {
   setCellFormat: (cellId: CellId, format: CellFormat) => void;
   setColWidth: (colIndex: number, width: number) => void;
   setRowHeight: (rowIndex: number, height: number) => void;
+  resetColWidths: () => void;
+  resetRowHeights: () => void;
 }
 
 export const useSheetStore = create<SheetState>()(
@@ -120,6 +122,16 @@ export const useSheetStore = create<SheetState>()(
     setRowHeight: (rowIndex, height) =>
       set((state) => {
         state.rowHeights[rowIndex] = height;
+      }),
+
+    resetColWidths: () =>
+      set((state) => {
+        state.colWidths = {};
+      }),
+
+    resetRowHeights: () =>
+      set((state) => {
+        state.rowHeights = {};
       }),
   }))
 );
