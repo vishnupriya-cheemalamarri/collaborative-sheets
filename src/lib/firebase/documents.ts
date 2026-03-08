@@ -141,7 +141,11 @@ export async function restoreDocument(
   }
 
   const deletedDoc = snap.val() as DeletedDocument;
-  const { deletedBy: _db, deletedAt: _da, ...restoredDoc } = deletedDoc;
+  const restoredDoc: SpreadsheetDocument = { ...deletedDoc };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete (restoredDoc as any).deletedBy;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete (restoredDoc as any).deletedAt;
 
   await set(docRef, { ...restoredDoc, updatedAt: Date.now() });
   await remove(deletedRef);
