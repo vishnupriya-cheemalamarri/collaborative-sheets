@@ -1,59 +1,193 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Collaborative Sheets
+
+A production-grade real-time collaborative spreadsheet application built with Next.js 14, Firebase, and TypeScript.
+
+🔗 [Live Demo](https://collaborative-sheets.vercel.app) &nbsp;·&nbsp; [GitHub](https://github.com/vishnupriya-cheemalamarri/collaborative-sheets)
+
+---
+
+## Features
+
+- **Real-time collaboration** — Multiple users edit simultaneously with live cursors and presence indicators
+- **Formula engine** — Hand-written recursive descent parser supporting SUM, AVERAGE, MIN, MAX, COUNT and arithmetic with correct operator precedence
+- **Authentication** — Google OAuth and guest access via Firebase Auth
+- **Cell formatting** — Bold, italic, text color, background color per cell
+- **Live activity feed** — See who joined and what they edited in real time
+- **CSV export** — Download any sheet as a CSV file
+- **Keyboard navigation** — Full arrow key, Tab, Enter, Delete support
+- **Auto-save** — Changes debounced and synced to Firebase with visual save indicator
+- **Soft delete + restore** — Deleted sheets are moved to a separate node and are fully recoverable
+- **Dark / light mode** — Theme toggle across all pages
+
+---
+
+## Tech Stack
+
+| Layer       | Technology                     |
+|-------------|--------------------------------|
+| Framework   | Next.js 14 (App Router)        |
+| Language    | TypeScript                     |
+| Database    | Firebase Realtime Database     |
+| Auth        | Firebase Authentication        |
+| State       | Zustand + Immer                |
+| Styling     | Tailwind CSS                   |
+| Animations  | Framer Motion                  |
+| Deployment  | Vercel                         |
+
+---
+
+## Architecture
+
+```
+src/
+├── app/                  # Next.js App Router pages
+│   ├── dashboard/        # Document list page
+│   ├── sheet/[id]/       # Spreadsheet editor page
+│   └── login/            # Authentication page
+├── components/
+│   ├── auth/             # AuthGuard
+│   ├── errors/           # ErrorBoundary, SheetErrorBoundary
+│   └── sheet/            # Grid, Cell, FormulaBar, FormattingToolbar
+├── hooks/
+│   ├── useSheet.ts       # Firebase cell sync + debounced writes
+│   └── usePresence.ts    # Live user presence
+├── lib/
+│   ├── firebase/         # Auth, database, cells, presence, documents
+│   ├── formula/          # Recursive descent parser + evaluator
+│   └── utils/            # Cell address, CSV export, color, logger
+├── store/
+│   └── sheetStore.ts     # Zustand global state
+└── types/                # TypeScript interfaces
+```
+
+---
+
+## Key Technical Decisions
+
+**Formula Engine**
+
+Instead of using `eval()` or `new Function()` — both XSS risks — the formula engine is a hand-written recursive descent parser. It tokenises the expression into typed tokens (NUMBER, CELL, RANGE, FUNC, OP) and evaluates it safely without executing arbitrary JavaScript. Supports cell references, ranges (A1:B3), nested functions, and correct operator precedence (`*` before `+`).
+
+**Real-time Sync**
+
+Firebase Realtime Database `onChildAdded` and `onChildChanged` listeners are used instead of `onValue` to avoid re-reading the entire cells object on every keystroke. Each listener is registered with a distinct function reference so `off()` can detach them independently. Cell writes are debounced to reduce Firebase write costs. All debounce timers are cleared on unmount to prevent stale writes.
+
+**Presence System**
+
+Each user writes their uid, display name, color, and active cell to `presence/{docId}/{uid}`. A heartbeat refreshes `lastSeen` every 30 seconds. Users not seen within 60 seconds are treated as stale and filtered out of the UI. `onDisconnect().remove()` handles ungraceful disconnects such as tab closes or network drops.
+
+**State Management**
+
+Zustand with Immer is used for the sheet store. All Firebase listener callbacks write into the store, and React components subscribe only to the slices they need — preventing unnecessary re-renders across the full cell grid.
+
+**Security**
+
+- Firebase Security Rules restrict all reads and writes to authenticated users only
+- Deleted documents are moved to a separate `deleted_documents` node so the active documents query never scans deleted data
+- All rules are version-controlled in `database.rules.json`
+
+**Error Handling**
+
+Class-based React Error Boundaries wrap both the root app and the sheet grid independently. A custom `logger` utility suppresses all console output in production while preserving full error details in development.
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+
+- A Firebase project with Realtime Database and Authentication enabled
+
+### Setup
+
+1. Clone the repository
+   ```bash
+   git clone https://github.com/vishnupriya-cheemalamarri/collaborative-sheets.git
+   cd collaborative-sheets
+   ```
+
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables
+   ```bash
+   cp .env.example .env.local
+   ```
+   Fill in your Firebase config values in `.env.local`
+
+4. Enable Firebase services
+   - **Authentication** → enable Google provider and Anonymous provider
+   - **Realtime Database** → create a database in your preferred region
+
+5. Deploy Firebase rules
+   ```bash
+   firebase deploy --only database
+   ```
+
+6. Run the development server
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## Environment Variables
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_DATABASE_URL=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Firebase Rules
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```json
+{
+  "rules": {
+    "documents": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["ownerId"]
+    },
+    "deleted_documents": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["ownerId"]
+    },
+    "cells": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "presence": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The app is deployed on Vercel. To deploy your own instance:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push your repository to GitHub
+2. Import the project at [vercel.com](https://vercel.com)
+3. Add all environment variables from `.env.example`
+4. Deploy
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Formula Engine — Design Decisions
-
-The formula engine uses a **regex-based evaluator** rather than a full AST parser.
-
-**Justification**: For a spreadsheet supporting `=SUM(A1:A5)` and basic arithmetic, a regex evaluator is:
-- Simpler to maintain
-- Faster to execute
-- Sufficient for the required feature set
-
-A full AST parser (like those used in Excel or Google Sheets) would be needed for:
-- Nested functions: `=SUM(A1, MAX(B1:B5))`
-- String functions: `=CONCAT(A1, " ", B1)`
-- Conditional logic: `=IF(A1>10, "High", "Low")`
-
-These are outside scope but the evaluator is designed to be extended — add new functions to `src/lib/formula/functions.ts`.
+---
 
 ## Demo
 
-![Dashboard](./public/demo-dashboard.png)
-![Spreadsheet](./public/demo-sheet.png)
-
-> Open two browser tabs on the same document to see real-time collaboration in action.
+> Open [https://collaborative-sheets.vercel.app](https://collaborative-sheets.vercel.app) in two browser tabs on the same document to see real-time collaboration in action.
