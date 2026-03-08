@@ -6,7 +6,7 @@ import { Cell } from './Cell';
 import { addressToCellId, cellIdToAddress } from '@/lib/utils/cellAddress';
 import type { CellId } from '@/types/cell';
 
-const ROWS = 50;
+const ROWS = 200;
 const COLS = 26;
 const DEFAULT_COL_WIDTH = 120;
 const DEFAULT_ROW_HEIGHT = 26;
