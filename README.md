@@ -164,12 +164,18 @@ NEXT_PUBLIC_FIREBASE_APP_ID=
       ".indexOn": ["ownerId"]
     },
     "cells": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      "$docId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
     },
     "presence": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      "$docId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid"
+        }
+      }
     }
   }
 }
